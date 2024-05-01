@@ -1,36 +1,35 @@
 import { Router } from 'express'
-import { startOfHour, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+
 import AppointmentsRepository from '../repositories/AppointmentsRepository'
+import CreateAppointmentService from '../services/CreateAppointmentService'
 
 const appointmentsRouter = Router()
 const appointmentsRepository = new AppointmentsRepository()
 
+// Rota: Receber a requisição, chamar outro arquivo, devolver uma resposta
+
 // DTO - Data Transfer Object
 
 //SoC: Separation fo Concerns (Separação de preocupaçoes)
-
 appointmentsRouter.get('/', (request, response) => {
 	const appointments = appointmentsRepository.all()
+
 	response.json(appointments)
 })
 
 appointmentsRouter.post('/', (request, response) => {
 	const { provider, date } = request.body
 
-	const parsedDate = startOfHour(parseISO(date))
+	const parsedDate = parseISO(date)
 
-	const findAppointmentInSameDate =
-		appointmentsRepository.findByDate(parsedDate)
+	const createAppointment = new CreateAppointmentService(
+		appointmentsRepository,
+	)
 
-	if (findAppointmentInSameDate) {
-		return response
-			.status(400)
-			.json({ message: 'Este compromisso já está agendado' })
-	}
-
-	const appointment = appointmentsRepository.create({
-		provider,
+	const appointment = createAppointment.execute({
 		date: parsedDate,
+		provider,
 	})
 
 	return response.json(appointment)
